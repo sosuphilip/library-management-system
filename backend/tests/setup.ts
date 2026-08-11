@@ -25,8 +25,11 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
+  // Table names are PascalCase (e.g. `User`, `RefreshToken`) and `USER` is a
+  // reserved keyword, so each must be double-quoted in the raw SQL.
+  const quoted = TABLES.map((t) => `"${t}"`).join(',');
   await prisma.$executeRawUnsafe(
-    `TRUNCATE TABLE ${TABLES.join(',')} RESTART IDENTITY CASCADE`
+    `TRUNCATE TABLE ${quoted} RESTART IDENTITY CASCADE`
   );
 });
 

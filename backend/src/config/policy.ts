@@ -24,11 +24,18 @@ export async function loanPeriodDaysForBook(bookId: string): Promise<number> {
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Whole days a loan was (or is) overdue, after grace. Negative → not overdue. */
+/**
+ * Whole days a loan was (or is) overdue, after grace. Negative → not overdue.
+ *
+ * A 1s epsilon absorbs sub-second clock/storage drift so a return landing on an
+ * exact day boundary (e.g. due at 12:00:00, returned at 12:00:00.050 five days
+ * later) is still counted as 5 days, not 6. Partial days still round up — a
+ * return 1 hour late is 1 day.
+ */
 export function overdueDays(dueDate: Date, asOf: Date, graceDays: number = policy.graceDays): number {
   const ms = asOf.getTime() - dueDate.getTime() - graceDays * DAY_MS;
   if (ms <= 0) return 0;
-  return Math.ceil(ms / DAY_MS);
+  return Math.ceil((ms - 1000) / DAY_MS);
 }
 
 export { prisma };

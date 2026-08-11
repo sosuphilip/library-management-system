@@ -131,7 +131,7 @@ describe('Member management', () => {
         .send({ reason: 'Staff courtesy' })
         .expect(200);
       expect(res.body.fine.status).toBe('WAIVED');
-      expect(res.body.fine.balance).toBe(0);
+      expect(Number(res.body.fine.balance)).toBe(0);
     });
 
     it('records a partial adjustment', async () => {
@@ -143,7 +143,7 @@ describe('Member management', () => {
         .set('Authorization', `Bearer ${librarian.accessToken}`)
         .send({ amount: 4, reason: 'Partial waiver' })
         .expect(200);
-      expect(res.body.fine.balance).toBe(6);
+      expect(Number(res.body.fine.balance)).toBe(6);
       expect(res.body.fine.status).toBe('UNPAID');
     });
   });

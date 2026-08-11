@@ -132,8 +132,8 @@ async function main() {
   }
 
   // Users
-  const admin = await ensureUser('admin@library.local', 'Pat', 'Director', 'ADMIN');
-  const librarian = await ensureUser('librarian@library.local', 'Sam', 'Circulation', 'LIBRARIAN');
+  await ensureUser('admin@library.local', 'Pat', 'Director', 'ADMIN');
+  await ensureUser('librarian@library.local', 'Sam', 'Circulation', 'LIBRARIAN');
   const members = [];
   for (const [first, last] of MEMBER_NAMES) {
     members.push(

@@ -75,7 +75,8 @@ describe('Reports & dashboard', () => {
       const s = res.body.stats;
       expect(s.books).toBe(2);
       expect(s.copies).toBe(2);
-      expect(s.activeLoans).toBe(2);
+      // activeLoans = all items currently out; overdue is a subset of it
+      expect(s.activeLoans).toBe(3);
       expect(s.overdueLoans).toBe(1);
       expect(s.members).toBeGreaterThanOrEqual(1);
       expect(s.outstandingFines).toBe(5);

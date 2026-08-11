@@ -13,7 +13,7 @@ async function createBook(librarian: { accessToken: string }, body: Record<strin
 
 describe('Catalog', () => {
   let librarian: { accessToken: string };
-  let member: { accessToken: string };
+  let member: Awaited<ReturnType<typeof createTestUser>>;
 
   beforeEach(async () => {
     librarian = await createLibrarian();
@@ -58,14 +58,12 @@ describe('Catalog', () => {
 
     it('rejects duplicate ISBN', async () => {
       await createBook(librarian, { title: 'First', isbn: '9780132350884' });
-      await createBook(librarian, { title: 'Second', isbn: '9780132350884' }).then(
-        () => {
-          throw new Error('should have failed');
-        },
-        (err) => {
-          expect(err.status).toBe(409);
-        }
-      );
+      const res = await api
+        .post('/api/v1/catalog')
+        .set('Authorization', `Bearer ${librarian.accessToken}`)
+        .send({ title: 'Second', isbn: '9780132350884' })
+        .expect(409);
+      expect(res.body.error.message).toContain('ISBN');
     });
 
     it('lists books with pagination', async () => {
@@ -234,6 +232,16 @@ describe('Catalog', () => {
     it('cannot delete a copy that is checked out', async () => {
       const book = await createBook(librarian, { title: 'In Use', copies: [{ barcode: 'BC-U' }] });
       const copyId = book.copies[0].id;
+      // A checked-out copy is one with an active loan (status is just denormalized).
+      await prisma.loan.create({
+        data: {
+          copyId,
+          userId: member.id,
+          bookId: book.id,
+          dueDate: new Date(Date.now() + 7 * 24 * 3600 * 1000),
+          fineRate: 0.5
+        }
+      });
       await prisma.copy.update({
         where: { id: copyId },
         data: { status: 'CHECKED_OUT' }

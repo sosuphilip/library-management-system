@@ -89,7 +89,7 @@ describe('Auth', () => {
     });
 
     it('blocks suspended users', async () => {
-      const suspended = await createTestUser({
+      await createTestUser({
         email: 'suspended@example.com',
         status: 'SUSPENDED',
         password: 'Passw0rd!'

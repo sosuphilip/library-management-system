@@ -1,4 +1,5 @@
 import bcrypt from 'bcrypt';
+import crypto from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import type { Role, User } from '@prisma/client';
 import prisma from '../lib/prisma';
@@ -50,9 +51,15 @@ function signAccessToken(user: Pick<User, 'id' | 'role'>): string {
 }
 
 function signRefreshToken(user: Pick<User, 'id' | 'role'>): string {
-  return jwt.sign({ sub: user.id, role: user.role, type: 'refresh' }, env.JWT_REFRESH_SECRET, {
-    expiresIn: env.JWT_REFRESH_EXPIRES_IN as jwt.SignOptions['expiresIn']
-  });
+  // Unique `jti` per token. Without it the payload is deterministic (same sub,
+  // role, type and fixed expiry), so two logins for the same user would mint
+  // identical tokens — colliding on the unique tokenHash column and making
+  // per-session revocation impossible.
+  return jwt.sign(
+    { sub: user.id, role: user.role, type: 'refresh', jti: crypto.randomUUID() },
+    env.JWT_REFRESH_SECRET,
+    { expiresIn: env.JWT_REFRESH_EXPIRES_IN as jwt.SignOptions['expiresIn'] }
+  );
 }
 
 /** Sign a token pair and persist the refresh-token hash for rotation/revocation. */

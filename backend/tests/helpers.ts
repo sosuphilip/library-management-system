@@ -41,7 +41,11 @@ export async function createTestUser(overrides: Partial<{
     }
   });
 
-  const login = await api.post('/api/v1/auth/login').send({ email, password }).expect(200);
+  // Suspended users are blocked from logging in (403), so tokens are unavailable.
+  const isSuspended = user.status === 'SUSPENDED';
+  const login = isSuspended
+    ? null
+    : await api.post('/api/v1/auth/login').send({ email, password }).expect(200);
   return {
     id: user.id,
     email,
@@ -49,8 +53,8 @@ export async function createTestUser(overrides: Partial<{
     firstName: user.firstName,
     lastName: user.lastName,
     role: user.role,
-    accessToken: login.body.tokens.accessToken,
-    refreshToken: login.body.tokens.refreshToken
+    accessToken: login?.body.tokens.accessToken ?? '',
+    refreshToken: login?.body.tokens.refreshToken ?? ''
   };
 }
 
@@ -63,6 +67,7 @@ export async function createLibrarian(overrides: Partial<{ email: string }> = {}
 }
 
 /** Register a brand-new member via the public API (tests the real flow). */
-export async function registerMember(body: Record<string, unknown>) {
+export function registerMember(body: Record<string, unknown>) {
+  // Deliberately NOT async: callers chain .expect(201) etc. on the supertest Test.
   return api.post('/api/v1/auth/register').send(body);
 }
