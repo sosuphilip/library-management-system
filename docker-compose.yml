@@ -1,0 +1,71 @@
+# Library Management System — local development & full-stack run
+#
+# Usage:
+#   docker compose up -d db            # just the database
+#   docker compose up --build          # database + backend + frontend
+#
+# Services mount source code for hot-reload in dev.
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: library-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: library
+      POSTGRES_PASSWORD: library
+      POSTGRES_DB: library
+    ports:
+      - "5432:5432"
+    volumes:
+      - library_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U library -d library"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: dev
+    container_name: library-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://library:library@db:5432/library
+      NODE_ENV: development
+      PORT: 4000
+      CORS_ORIGINS: http://localhost:5173
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-docker-dev-access-secret}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-docker-dev-refresh-secret}
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      MAIL_TRANSPORT: json
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+    command: sh -c "npx prisma migrate deploy && npx prisma db seed && npm run dev"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev
+    container_name: library-frontend
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://localhost:4000/api/v1
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+    command: npm run dev -- --host
+
+volumes:
+  library_pgdata:

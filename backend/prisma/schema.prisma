@@ -1,0 +1,371 @@
+// Library Management System — Prisma schema
+// PostgreSQL database
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// Enums
+// ============================================================
+
+enum Role {
+  ADMIN
+  LIBRARIAN
+  MEMBER
+}
+
+enum CopyStatus {
+  AVAILABLE
+  CHECKED_OUT
+  LOST
+  DAMAGED
+  IN_REPAIR
+}
+
+enum CopyCondition {
+  NEW
+  GOOD
+  FAIR
+  POOR
+}
+
+enum LoanStatus {
+  ACTIVE
+  RETURNED
+  LOST
+}
+
+enum ReservationStatus {
+  WAITING
+  READY
+  FULFILLED
+  CANCELLED
+  EXPIRED
+}
+
+enum FineStatus {
+  UNPAID
+  PAID
+  WAIVED
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum NotificationType {
+  DUE_SOON
+  OVERDUE
+  HOLD_AVAILABLE
+  HOLD_EXPIRED
+  PASSWORD_RESET
+  FINE_CHARGED
+}
+
+enum NotificationChannel {
+  EMAIL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+// ============================================================
+// Users & auth
+// ============================================================
+
+model User {
+  id            String      @id @default(uuid())
+  email         String      @unique
+  passwordHash  String
+  role          Role        @default(MEMBER)
+  firstName     String
+  lastName      String
+  status        UserStatus  @default(ACTIVE)
+  suspendedUntil DateTime?
+  // Optional phone for notifications
+  phone         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  refreshTokens RefreshToken[]
+  passwordResets PasswordResetToken[]
+  loans         Loan[]
+  reservations  Reservation[]
+  fines         Fine[]
+  finePayments  FinePayment[]
+  notifications Notification[]
+  auditLogs     AuditLog[]    @relation("AuditActor")
+  emailTemplates EmailTemplate[] @relation("EmailTemplateEditor")
+
+  // Member-specific derived fields (non-null for MEMBER role)
+  membershipNumber String?    @unique
+
+  @@index([role])
+  @@index([status])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revokedAt DateTime?
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ============================================================
+// Catalog
+// ============================================================
+
+model Book {
+  id           String      @id @default(uuid())
+  title        String
+  subtitle     String?
+  isbn         String?     @unique
+  publisher    String?
+  year         Int?
+  language     String?
+  description  String?
+  coverUrl     String?
+  pageCount    Int?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  authors      BookAuthor[]
+  categories   BookCategory[]
+  copies       Copy[]
+  loans        Loan[]
+  reservations Reservation[]
+
+  @@index([title])
+  @@index([isbn])
+}
+
+model Author {
+  id        String       @id @default(uuid())
+  name      String
+  bio       String?
+  createdAt DateTime     @default(now())
+
+  books     BookAuthor[]
+
+  @@unique([name])
+  @@index([name])
+}
+
+model BookAuthor {
+  bookId   String
+  authorId String
+  position Int       @default(0)
+  book     Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  author   Author    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@id([bookId, authorId])
+  @@index([authorId])
+}
+
+model Category {
+  id        String         @id @default(uuid())
+  name      String         @unique
+  description String?
+  // Optional loan-period override (days) for books in this category
+  loanPeriodDays Int?
+  createdAt DateTime       @default(now())
+
+  books     BookCategory[]
+}
+
+model BookCategory {
+  bookId     String
+  categoryId String
+  book       Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([bookId, categoryId])
+  @@index([categoryId])
+}
+
+model Copy {
+  id        String       @id @default(uuid())
+  bookId    String
+  book      Book         @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  barcode   String       @unique
+  condition CopyCondition @default(GOOD)
+  status    CopyStatus   @default(AVAILABLE)
+  // date the copy is due back if currently checked out
+  dueDate   DateTime?
+  notes     String?
+  createdAt DateTime     @default(now())
+
+  loans        Loan[]
+  reservations Reservation[]
+
+  @@index([bookId])
+  @@index([status])
+}
+
+// ============================================================
+// Circulation
+// ============================================================
+
+model Loan {
+  id           String     @id @default(uuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  copyId       String
+  copy         Copy       @relation(fields: [copyId], references: [id])
+  bookId       String
+  book         Book       @relation(fields: [bookId], references: [id])
+  status       LoanStatus @default(ACTIVE)
+  checkedOutAt DateTime   @default(now())
+  dueDate      DateTime
+  returnedAt   DateTime?
+  renewals     Int        @default(0)
+  maxRenewals  Int        @default(2)
+  // Snapshot of daily fine rate at checkout time (config may change later)
+  fineRate     Decimal    @default(0)
+  note         String?
+
+  fines       Fine[]
+  createdAt   DateTime   @default(now())
+
+  @@index([userId, status])
+  @@index([copyId, status])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model Reservation {
+  id           String            @id @default(uuid())
+  bookId       String
+  book         Book              @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  user         User              @relation(fields: [userId], references: [id])
+  userId       String
+  copyId       String?           // set when a copy is allocated to this hold
+  copy         Copy?             @relation(fields: [copyId], references: [id])
+  status       ReservationStatus @default(WAITING)
+  position     Int               @default(1)
+  createdAt    DateTime          @default(now())
+  readyAt      DateTime?
+  fulfilledAt  DateTime?
+  cancelledAt  DateTime?
+  expiresAt    DateTime?         // deadline to borrow a READY hold
+  notifiedAt   DateTime?
+
+  @@index([bookId, status])
+  @@index([userId, status])
+}
+
+model Fine {
+  id          String     @id @default(uuid())
+  loanId      String?
+  loan        Loan?      @relation(fields: [loanId], references: [id], onDelete: SetNull)
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  amount      Decimal
+  // remaining unpaid amount; 0 when fully paid or waived
+  balance     Decimal
+  reason      String
+  status      FineStatus @default(UNPAID)
+  createdAt   DateTime   @default(now())
+  settledAt   DateTime?
+  payments    FinePayment[]
+
+  @@index([userId, status])
+  @@index([status])
+}
+
+model FinePayment {
+  id        String   @id @default(uuid())
+  fineId    String
+  fine      Fine     @relation(fields: [fineId], references: [id], onDelete: Cascade)
+  amount    Decimal
+  method    String   @default("CASH")
+  // reason for waive adjustments, e.g. "staff courtesy"
+  reason    String?
+  createdById String?
+  createdBy User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([fineId])
+}
+
+// ============================================================
+// Notifications
+// ============================================================
+
+model Notification {
+  id        String              @id @default(uuid())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  channel   NotificationChannel @default(EMAIL)
+  subject   String
+  body      String
+  status    NotificationStatus  @default(PENDING)
+  // Email address it was sent to (snapshot at send time)
+  recipient String?
+  error     String?
+  relatedLoanId  String?
+  relatedReservationId String?
+  createdAt DateTime            @default(now())
+  sentAt    DateTime?
+
+  @@index([userId, status])
+  @@index([status])
+}
+
+model EmailTemplate {
+  id        String   @id @default(uuid())
+  type      NotificationType @unique
+  subject   String
+  body      String
+  updatedById String?
+  updatedBy   User?    @relation("EmailTemplateEditor", fields: [updatedById], references: [id], onDelete: SetNull)
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================
+// Audit log
+// ============================================================
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  action     String   // e.g. LOAN.CHECKOUT, FINE.WAIVED
+  entityType String   // e.g. LOAN, BOOK, USER
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+}
