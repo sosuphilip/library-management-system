@@ -1,10 +1,9 @@
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { LoadingBlock } from '../components/ui';
+
 export default function HomePage() {
-  return (
-    <main className="mx-auto max-w-3xl px-4 py-16 text-center">
-      <h1 className="text-3xl font-bold text-brand-700">Library Management System</h1>
-      <p className="mt-4 text-slate-600">
-        Catalog, circulation, and member management for your library.
-      </p>
-    </main>
-  );
+  const { user, loading } = useAuth();
+  if (loading) return <LoadingBlock />;
+  return <Navigate to={user && user.role === 'MEMBER' ? '/my' : '/catalog'} replace />;
 }

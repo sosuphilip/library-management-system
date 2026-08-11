@@ -5,6 +5,7 @@ node_modules/
 dist/
 build/
 coverage/
+*.tsbuildinfo
 
 # Env files (keep .env.example, ignore real secrets)
 .env
