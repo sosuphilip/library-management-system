@@ -175,53 +175,51 @@ Frontend (`frontend/.env`): `VITE_API_URL` — base URL of the API (`/api/v1` in
 
 ## Deploying to production
 
-The app splits cleanly for free-tier hosting:
-
-| Part     | Host                                                                   |
-| -------- | ---------------------------------------------------------------------- |
+The app splits cleanly for free-tier hosting:| Part     | Host                                                                    |
+| -------- | ----------------------------------------------------------------------- |
 | Frontend | **GitHub Pages** (`https://<user>.github.io/library-management-system/`) |
-| Backend  | **Railway** (long-running Node service — the daily cron needs it)      |
-| Database | **Railway Postgres** (or Neon — free serverless Postgres)              |
+| Backend  | **Render** (free web service — needs to be long-running for the cron)   |
+| Database | **Neon** (free serverless Postgres, 0.5 GB, doesn't expire)             |
 
 > ⚠️ GitHub Pages can only serve static files — it **cannot** run the Express
-> API or Postgres. The backend needs a real host like Railway, Render, Fly.io
-> or Koyeb.
+> API or Postgres. The backend needs a real host. Railway (trial credit),
+> Render, Fly.io and Koyeb are alternatives — this guide uses **Render + Neon**
+> because both are genuinely free-forever tiers.
 
-### 1. Backend + database on Railway
+### 1. Database on Neon (free)
 
-1. Push this repo to GitHub, then sign up at [railway.app](https://railway.app).
-2. **New Project → Deploy from GitHub repo** → pick this repo.
-3. **No Root Directory setting needed** — the repo-root `Dockerfile` +
-   `railway.json` build the backend straight from the repo root and run
-   `prisma migrate deploy` at startup. (Alternatively you may set the service's
-   Root Directory to `backend`, which uses `backend/railway.json` instead.)
-4. Add a **Postgres** plugin (Project → New → Database → PostgreSQL). Copy its
-   `DATABASE_URL` into the backend service's variables.
-5. Add the remaining environment variables to the backend service:
+1. Sign up at [neon.tech](https://console.neon.tech) (GitHub login works).
+2. Create a project (any region), then copy the **connection string** from
+   Connection Details — it looks like `postgresql://user:pass@ep-xxx.region.aws.neon.tech/dbname?sslmode=require`.
 
-   | Variable             | Value                                                        |
-   | -------------------- | ------------------------------------------------------------ |
-   | `DATABASE_URL`       | from the Postgres plugin                                     |
-   | `JWT_ACCESS_SECRET`  | long random string (`openssl rand -hex 32`)                  |
-   | `JWT_REFRESH_SECRET` | different long random string                                 |
-   | `CORS_ORIGINS`       | `https://<user>.github.io`                                   |
-   | `APP_BASE_URL`       | `https://<user>.github.io/library-management-system`         |
-   | `MAIL_TRANSPORT`     | `json` (emails are logged, not delivered, on the free tier)  |
-   | `NODE_ENV`           | `production`                                                 |
+### 2. Backend on Render (free)
 
-6. **Seed once** (the seed truncates all tables, so it must NEVER run
-   automatically on every deploy). Run it from your machine against the
-   Railway database — the prod image has no `tsx`, so a Railway shell won't
-   work:
-
-   ```bash
-   cd backend
-   DATABASE_URL="<railway-db-connection-string>" npm run db:seed
-   ```
-7. The API is live at `https://<your-app>.up.railway.app` — verify
+1. Sign up at [render.com](https://render.com) (GitHub login works).
+2. **New + → Blueprint** → pick this repo. The repo-root `render.yaml` is read
+   automatically: it builds `./Dockerfile` (which builds the backend), sets
+   generated JWT secrets, and points CORS/links at the GitHub Pages site.
+3. When prompted, paste the **Neon `DATABASE_URL`** (the blueprint's only
+   manual value) and **Apply**. Render deploys and runs `prisma migrate deploy`
+   on start.
+4. The API is live at `https://<your-app>.onrender.com` — verify
    `GET /health` returns `{"status":"ok"}`.
 
-### 2. Frontend on GitHub Pages
+> Free-tier notes: Render sleeps the service after ~15 min idle and wakes it on
+> the next request (a few seconds' delay), and the daily notification cron
+> only runs while the service is awake. Neon's serverless DB auto-suspends and
+> resumes — no expiry.
+
+### 3. Seed once (demo data)
+
+The seed truncates all tables, so it must NEVER run automatically. Run it from
+your machine against the Neon database (the prod image has no `tsx`):
+
+```bash
+cd backend
+DATABASE_URL="<neon-connection-string>" npm run db:seed
+```
+
+### 4. Frontend on GitHub Pages
 
 1. Repo **Settings → Pages → Source → GitHub Actions** (the workflow
    `.github/workflows/deploy-frontend.yml` does the rest).
@@ -232,6 +230,11 @@ The app splits cleanly for free-tier hosting:
    Run workflow**) and the SPA appears at
    `https://<user>.github.io/library-management-system/`.
 4. Sign in with the seeded demo accounts (password `Passw0rd!`).
+
+> Prefer Railway instead of Render? The repo also ships `railway.json` at the
+> root (and `backend/railway.json` if you set the service's Root Directory to
+> `backend`) — same zero-config Docker build, and you'd just fill the same
+> environment variables in Railway's dashboard.
 
 > The build bakes `VITE_BASE=/<repo-name>/` (auto-derived from the repo name)
 > so assets resolve under the Pages sub-path, and copies `index.html` to

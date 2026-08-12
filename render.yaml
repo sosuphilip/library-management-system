@@ -1,0 +1,29 @@
+# Render Blueprint — one-click backend deploy (free tier).
+#
+# Deploy: render.com → New + → Blueprint → pick this repo → paste the Neon
+# DATABASE_URL when prompted → Apply. The root ./Dockerfile builds the API and
+# runs `prisma migrate deploy` on start. The seed never runs automatically
+# (set SEED_ON_START=true only for a fresh one-time seed).
+services:
+  - type: web
+    name: library-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Render injects its own PORT — do not set one here.
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://sosuphilip.github.io
+      - key: APP_BASE_URL
+        value: https://sosuphilip.github.io/library-management-system
+      - key: MAIL_TRANSPORT
+        value: json
