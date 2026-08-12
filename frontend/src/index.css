@@ -5,7 +5,7 @@
 @layer base {
   html {
     scroll-behavior: smooth;
-    @apply dark:bg-slate-900;
+    @apply bg-paper dark:bg-brand-950;
   }
 
   /* Native controls (select dropdowns, scrollbars, date pickers) follow the theme */
@@ -14,11 +14,18 @@
   }
 
   body {
-    @apply bg-slate-100 text-slate-900 antialiased dark:bg-slate-900 dark:text-slate-100;
+    @apply bg-paper font-sans text-stone-800 antialiased dark:bg-brand-950 dark:text-stone-200;
+  }
+
+  /* Reading-room display headings (Fraunces) */
+  h1,
+  h2,
+  h3 {
+    @apply font-display leading-snug;
   }
 
   ::selection {
-    @apply bg-brand-600 text-white;
+    @apply bg-brand-700 text-white;
   }
 
   /* Slim, unobtrusive scrollbars */
@@ -27,9 +34,9 @@
     width: 8px;
   }
   ::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-slate-300 dark:bg-slate-700;
+    @apply rounded-full bg-stone-300 dark:bg-brand-800;
   }
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-400 dark:bg-slate-600;
+    @apply bg-stone-400 dark:bg-brand-700;
   }
 }

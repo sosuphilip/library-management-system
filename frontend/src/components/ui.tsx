@@ -1,6 +1,7 @@
 import { useState, type ReactNode, type ButtonHTMLAttributes, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes, type ImgHTMLAttributes } from 'react';
 import { clsx } from 'clsx';
 import { statusClass } from '../lib/format';
+import { Icon } from './icons';
 
 // ---------------------------------------------------------------
 // Button
@@ -27,7 +28,7 @@ export function Button({
     primary: 'bg-brand-600 text-white shadow-sm hover:bg-brand-700 hover:shadow-md active:scale-[0.98]',
     secondary:
       'border border-slate-300 bg-white text-slate-700 shadow-sm hover:border-slate-400 hover:bg-slate-50 hover:shadow-md active:scale-[0.98] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-700 dark:hover:text-white',
-    accent: 'bg-amber-500 text-white shadow-sm hover:bg-amber-600 hover:shadow-md active:scale-[0.98]',
+    accent: 'bg-brass-700 text-white shadow-sm hover:bg-brass-800 hover:shadow-md active:scale-[0.98]',
     danger: 'bg-red-600 text-white shadow-sm hover:bg-red-700 hover:shadow-md active:scale-[0.98]',
     ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white'
   };
@@ -114,7 +115,7 @@ export function CardHeader({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-700">
       <div>
-        <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">{title}</h2>
+        <h2 className="text-base font-semibold tracking-tight text-stone-800 dark:text-stone-100">{title}</h2>
         {subtitle && <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>}
       </div>
       {actions}
@@ -235,8 +236,10 @@ export function LoadingBlock({ label = 'Loading…' }: { label?: string }) {
 
 export function EmptyState({ title, message, action }: { title: string; message?: string; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center gap-2 py-16 text-center">
-      <div className="text-3xl">📚</div>
+    <div className="flex flex-col items-center gap-3 py-16 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-700 dark:bg-brand-900/60 dark:text-brand-300">
+        <Icon name="book" className="h-6 w-6" />
+      </div>
       <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{title}</h3>
       {message && <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400">{message}</p>}
       {action && <div className="mt-2">{action}</div>}
@@ -248,8 +251,8 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   return (
     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">{title}</h1>
-        {subtitle && <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>}
+        <h1 className="text-2xl font-semibold tracking-tight text-stone-800 dark:text-stone-100">{title}</h1>
+        {subtitle && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>

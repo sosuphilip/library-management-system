@@ -14,6 +14,7 @@ import {
   PageHeader
 } from '../components/ui';
 import { formatDateTime, formatMoney, fullName } from '../lib/format';
+import { Icon, type IconName } from '../components/icons';
 
 export default function HomePage() {
   const { user, loading } = useAuth();
@@ -46,15 +47,15 @@ function StaffDashboard() {
   const stats = statsQuery.data!.stats;
   const recent = checkoutsQuery.data?.loans ?? [];
 
-  const quickActions = [
-    { to: '/catalog/new', label: 'Add a book', icon: '➕' },
-    { to: '/circulation', label: 'Check in / check out', icon: '🔁' },
-    { to: '/members', label: 'Manage members', icon: '👥' },
-    { to: '/reports', label: 'View reports & exports', icon: '📊' },
+  const quickActions: Array<{ to: string; label: string; icon: IconName }> = [
+    { to: '/catalog/new', label: 'Add a book', icon: 'plus' },
+    { to: '/circulation', label: 'Check in / check out', icon: 'circulation' },
+    { to: '/members', label: 'Manage members', icon: 'members' },
+    { to: '/reports', label: 'View reports & exports', icon: 'reports' },
     ...(isAdmin
       ? [
-          { to: '/admin/audit', label: 'Browse audit log', icon: '🧾' },
-          { to: '/admin/templates', label: 'Edit email templates', icon: '✉️' }
+          { to: '/admin/audit', label: 'Browse audit log', icon: 'audit' },
+          { to: '/admin/templates', label: 'Edit email templates', icon: 'mail' }
         ]
       : [])
   ];
@@ -62,7 +63,7 @@ function StaffDashboard() {
   return (
     <div>
       <PageHeader
-        title={`Welcome back, ${user?.firstName ?? 'there'} 👋`}
+        title={`Welcome back, ${user?.firstName ?? 'there'}`}
         subtitle="Here's what's happening at the library today"
       />
 
@@ -127,8 +128,11 @@ function StaffDashboard() {
                 to={a.to}
                 className="group flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:border-brand-300 hover:text-brand-700 hover:shadow-md dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-brand-500/60 dark:hover:text-brand-300"
               >
-                <span aria-hidden className="text-lg transition-transform duration-150 group-hover:scale-110">
-                  {a.icon}
+                <span
+                  aria-hidden
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-700 transition-colors duration-150 group-hover:bg-brand-600 group-hover:text-white dark:bg-brand-900/60 dark:text-brand-300 dark:group-hover:bg-brand-700"
+                >
+                  <Icon name={a.icon} className="h-4 w-4" />
                 </span>
                 {a.label}
                 <span aria-hidden className="ml-auto text-slate-300 transition-transform duration-150 group-hover:translate-x-0.5 dark:text-slate-600">
@@ -147,7 +151,7 @@ function Stat({ label, value, accent }: { label: string; value: string | number;
   return (
     <Card className="p-4">
       <p className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">{label}</p>
-      <p className={`mt-1 text-2xl font-bold ${accent ? 'text-red-600 dark:text-red-400' : 'text-slate-800 dark:text-slate-100'}`}>
+      <p className={`mt-1 font-display text-2xl font-semibold tracking-tight ${accent ? 'text-red-600 dark:text-red-400' : 'text-stone-800 dark:text-stone-100'}`}>
         {value}
       </p>
     </Card>
