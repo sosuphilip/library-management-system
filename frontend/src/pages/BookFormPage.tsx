@@ -184,7 +184,7 @@ export default function BookFormPage() {
               Look up
             </Button>
           </div>
-          {lookupError && <p className="-mt-3 text-xs text-red-600">{lookupError}</p>}
+          {lookupError && <p className="-mt-3 text-xs text-red-600 dark:text-red-400">{lookupError}</p>}
 
           <Field label="Title">
             <Input required value={form.title} onChange={set('title')} placeholder="The title of the book" />
@@ -229,7 +229,7 @@ export default function BookFormPage() {
             </Field>
           )}
 
-          <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+          <div className="flex justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-700">
             <Button variant="secondary" type="button" onClick={() => navigate(-1)}>
               Cancel
             </Button>

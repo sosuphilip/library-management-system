@@ -165,6 +165,7 @@ Backend (`backend/.env`) — see `.env.example` for all:
 | Variable                        | Purpose                                   |
 | ------------------------------- | ----------------------------------------- |
 | `DATABASE_URL`                  | PostgreSQL connection string              |
+| `APP_BASE_URL`                  | Origin used in emailed links (password reset) — must be the **frontend**, e.g. `http://localhost:5173` |
 | `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | signing secrets                  |
 | `CORS_ORIGINS`                  | comma-separated allowed browser origins   |
 | `MAIL_TRANSPORT`                | `json` logs emails (dev) or `smtp`        |

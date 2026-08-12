@@ -2,7 +2,7 @@ import cron from 'node-cron';
 import prisma from '../lib/prisma';
 import { logger } from '../lib/logger';
 import { policy } from '../config/policy';
-import { sendNotification, resolveTemplate, renderTemplate } from '../services/notification.service';
+import { sendNotification, resolveTemplateFromDb, renderTemplate } from '../services/notification.service';
 import { expireStaleReadyHolds } from '../services/circulation.service';
 
 const DUE_SOON_WINDOW_DAYS = 3;
@@ -28,7 +28,7 @@ export async function runSweep(now = new Date()): Promise<{ dueSoon: number; ove
   let dueSoon = 0;
   for (const loan of dueSoonLoans) {
     if (await alreadyNotified(loan.id, 'DUE_SOON')) continue;
-    const tpl = resolveTemplate('DUE_SOON');
+    const tpl = await resolveTemplateFromDb('DUE_SOON');
     const { subject, body } = renderTemplate(tpl, {
       firstName: loan.user.firstName,
       bookTitle: loan.copy.book.title,
@@ -53,7 +53,7 @@ export async function runSweep(now = new Date()): Promise<{ dueSoon: number; ove
   let overdue = 0;
   for (const loan of overdueLoans) {
     if (await alreadyNotified(loan.id, 'OVERDUE')) continue;
-    const tpl = resolveTemplate('OVERDUE');
+    const tpl = await resolveTemplateFromDb('OVERDUE');
     const { subject, body } = renderTemplate(tpl, {
       firstName: loan.user.firstName,
       bookTitle: loan.copy.book.title,

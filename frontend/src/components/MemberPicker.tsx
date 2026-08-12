@@ -51,26 +51,26 @@ export function MemberPicker({
         placeholder="Search member by name, email or number…"
       />
       {open && q.trim().length > 0 && (
-        <div className="absolute z-30 mt-1 w-full overflow-hidden rounded-md border border-slate-200 bg-white shadow-lg">
+        <div className="absolute z-30 mt-1 w-full overflow-hidden rounded-md border border-slate-200 bg-white shadow-lg dark:border-slate-600 dark:bg-slate-800">
           {search.isLoading ? (
-            <p className="px-3 py-2 text-sm text-slate-400">Searching…</p>
+            <p className="px-3 py-2 text-sm text-slate-400 dark:text-slate-500">Searching…</p>
           ) : (search.data?.items ?? []).length === 0 ? (
-            <p className="px-3 py-2 text-sm text-slate-400">No members found</p>
+            <p className="px-3 py-2 text-sm text-slate-400 dark:text-slate-500">No members found</p>
           ) : (
             (search.data?.items ?? []).map((m) => (
               <button
                 key={m.id}
                 type="button"
-                className="block w-full px-3 py-2 text-left text-sm hover:bg-brand-50"
+                className="block w-full px-3 py-2 text-left text-sm hover:bg-brand-50 dark:hover:bg-brand-900/50"
                 onClick={() => {
                   onSelect(m);
                   setQ('');
                   setOpen(false);
                 }}
               >
-                <span className="font-medium text-slate-800">{fullName(m.firstName, m.lastName)}</span>
-                <span className="ml-2 text-slate-500">{m.email}</span>
-                <span className="ml-2 text-xs text-slate-400">{m.membershipNumber}</span>
+                <span className="font-medium text-slate-800 dark:text-slate-100">{fullName(m.firstName, m.lastName)}</span>
+                <span className="ml-2 text-slate-500 dark:text-slate-400">{m.email}</span>
+                <span className="ml-2 text-xs text-slate-400 dark:text-slate-500">{m.membershipNumber}</span>
               </button>
             ))
           )}

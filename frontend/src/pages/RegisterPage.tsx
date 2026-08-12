@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../lib/api';
 import { Alert, Button, Card, Field, Input } from '../components/ui';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -29,15 +30,18 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-100 via-slate-100 to-brand-100 px-4 dark:from-slate-900 dark:via-slate-900 dark:to-brand-950">
+      <ThemeToggle className="absolute right-4 top-4 rounded-lg border border-slate-300 bg-white/80 p-2 text-slate-600 shadow-sm backdrop-blur transition-colors hover:bg-white hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white" />
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <span className="text-4xl" aria-hidden>📚</span>
-          <h1 className="mt-2 text-xl font-bold text-slate-800">Join the Library</h1>
-          <p className="text-sm text-slate-500">Create a membership account</p>
+          <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-3xl shadow-md" aria-hidden>
+            📚
+          </span>
+          <h1 className="mt-3 text-xl font-bold text-slate-800 dark:text-slate-100">Join the Library</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Create a membership account</p>
         </div>
 
-        <Card className="p-6">
+        <Card className="p-6 shadow-xl">
           <form onSubmit={onSubmit} className="space-y-4">
             {error && <Alert>{error}</Alert>}
             <div className="grid grid-cols-2 gap-3">
@@ -77,7 +81,7 @@ export default function RegisterPage() {
 
           <p className="mt-4 text-center text-sm text-slate-500">
             Already have an account?{' '}
-            <Link to="/login" className="font-medium text-brand-600 hover:text-brand-700">
+            <Link to="/login" className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">
               Sign in
             </Link>
           </p>

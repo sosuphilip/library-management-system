@@ -5,6 +5,7 @@ import circulationRouter from './circulation.routes';
 import membersRouter from './members.routes';
 import reportsRouter from './reports.routes';
 import notificationsRouter from './notifications.routes';
+import adminRouter from './admin.routes';
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use('/circulation', circulationRouter);
 router.use('/members', membersRouter);
 router.use('/reports', reportsRouter);
 router.use('/notifications', notificationsRouter);
+router.use('/admin', adminRouter);
 
 export default router;

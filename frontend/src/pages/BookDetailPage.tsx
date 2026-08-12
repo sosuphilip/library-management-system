@@ -10,6 +10,7 @@ import {
   Button,
   Card,
   CardHeader,
+  CoverImage,
   EmptyState,
   Field,
   Input,
@@ -150,21 +151,20 @@ export default function BookDetailPage() {
         {/* Info */}
         <Card className="lg:col-span-1">
           <div className="flex flex-col items-center p-6">
-            {book.coverUrl ? (
-              <img src={book.coverUrl} alt="" className="h-64 w-44 rounded object-cover shadow-md" />
-            ) : (
-              <div className="flex h-64 w-44 items-center justify-center rounded bg-brand-50 text-6xl font-bold text-brand-700">
-                {book.title.charAt(0)}
-              </div>
-            )}
+            <CoverImage
+              title={book.title}
+              src={book.coverUrl}
+              className="h-64 w-44 rounded-md shadow-lg transition-shadow duration-200 hover:shadow-xl"
+            />
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               {book.categories.map((c) => (
-                <span key={c.category.id} className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                <span key={c.category.id} className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                   {c.category.name}
                 </span>
               ))}
             </div>
             <Button
+              variant="accent"
               className="mt-5 w-full"
               disabled={availableCopies.length === 0}
               loading={reserve.isPending}
@@ -173,7 +173,7 @@ export default function BookDetailPage() {
               {availableCopies.length > 0 ? 'Place a hold' : 'Place a hold (waitlist)'}
             </Button>
             {availableCopies.length === 0 && (
-              <p className="mt-2 text-xs text-slate-400">No copies available — you'll join the waitlist.</p>
+              <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">No copies available — you'll join the waitlist.</p>
             )}
           </div>
         </Card>
@@ -192,9 +192,9 @@ export default function BookDetailPage() {
             <Detail label="Available" value={String(availableCopies.length)} />
           </dl>
           {book.description && (
-            <div className="border-t border-slate-100 px-5 py-4">
-              <h3 className="mb-1 text-sm font-semibold text-slate-700">Description</h3>
-              <p className="whitespace-pre-line text-sm text-slate-600">{book.description}</p>
+            <div className="border-t border-slate-100 px-5 py-4 dark:border-slate-700">
+              <h3 className="mb-1 text-sm font-semibold text-slate-700 dark:text-slate-200">Description</h3>
+              <p className="whitespace-pre-line text-sm text-slate-600 dark:text-slate-400">{book.description}</p>
             </div>
           )}
         </Card>
@@ -213,7 +213,7 @@ export default function BookDetailPage() {
           }
         />
         {addOpen && (
-          <div className="border-b border-slate-100 bg-slate-50 px-5 py-4">
+          <div className="border-b border-slate-100 bg-slate-50 px-5 py-4 dark:border-slate-700 dark:bg-slate-900/60">
             <form
               className="flex flex-wrap items-end gap-3"
               onSubmit={(e) => {
@@ -253,17 +253,17 @@ export default function BookDetailPage() {
         {book.copies.length === 0 ? (
           <EmptyState title="No copies yet" message="Add a copy so members can check it out." />
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-700">
             {book.copies.map((copy) => (
               <li key={copy.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
                 <div className="flex items-center gap-3">
-                  <span className="font-mono text-sm text-slate-700">{copy.barcode}</span>
-                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">
+                  <span className="font-mono text-sm text-slate-700 dark:text-slate-300">{copy.barcode}</span>
+                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500 dark:bg-slate-700 dark:text-slate-400">
                     {copy.condition}
                   </span>
                   <Badge status={copy.status} />
                   {copy.dueDate && copy.status === 'CHECKED_OUT' && (
-                    <span className="text-xs text-slate-400">due {formatDate(copy.dueDate)}</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500">due {formatDate(copy.dueDate)}</span>
                   )}
                 </div>
 
@@ -291,7 +291,7 @@ export default function BookDetailPage() {
                 </div>
 
                 {checkoutCopyId === copy.id && (
-                  <div className="w-full border-t border-slate-100 pt-3">
+                  <div className="w-full border-t border-slate-100 pt-3 dark:border-slate-700">
                     <CheckoutForm
                       copyId={copy.id}
                       copyLabel={copy.barcode}
@@ -310,11 +310,11 @@ export default function BookDetailPage() {
       {isStaff && book.loans && book.loans.length > 0 && (
         <Card className="mt-6">
           <CardHeader title="Recent loans" />
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-700">
             {book.loans.map((loan) => (
               <li key={loan.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm">
                 <div>
-                  <p className="font-medium text-slate-700">
+                  <p className="font-medium text-slate-700 dark:text-slate-200">
                     {loan.user ? fullName(loan.user.firstName, loan.user.lastName) : '—'}
                   </p>
                   <p className="text-xs text-slate-400">
@@ -323,7 +323,7 @@ export default function BookDetailPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge status={loan.status} />
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
                     {loan.status === 'RETURNED'
                       ? `returned ${formatDate(loan.returnedAt)}`
                       : `due ${formatDate(loan.dueDate)}`}
@@ -341,8 +341,8 @@ export default function BookDetailPage() {
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</dt>
-      <dd className="mt-0.5 text-slate-700">{value}</dd>
+      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">{label}</dt>
+      <dd className="mt-0.5 text-slate-700 dark:text-slate-300">{value}</dd>
     </div>
   );
 }
@@ -368,7 +368,7 @@ function CheckoutForm({
         }}
         resetKey={copyId}
       />
-      <p className="text-sm text-slate-500 md:py-2">
+      <p className="text-sm text-slate-500 md:py-2 dark:text-slate-400">
         {busy
           ? 'Checking out…'
           : picked

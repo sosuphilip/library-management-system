@@ -8,6 +8,7 @@ import { generateToken, hashToken } from '../utils/crypto';
 import { audit } from './audit.service';
 import { conflict, forbidden, notFound, unauthorized } from '../utils/httpError';
 import { mailer } from '../lib/mailer';
+import { renderTemplate, resolveTemplateFromDb } from './notification.service';
 
 /** bcrypt cost factor — deliberately expensive (spec requirement). */
 const BCRYPT_COST = 12;
@@ -246,11 +247,13 @@ export async function requestPasswordReset(email: string): Promise<void> {
   });
 
   const resetUrl = `${env.APP_BASE_URL}/reset-password?token=${rawToken}`;
-  await mailer.send({
-    to: user.email,
-    subject: 'Reset your Library password',
-    text: `Hi ${user.firstName},\n\nSomeone requested a password reset for your account. Click the link below to set a new password (valid for ${env.PASSWORD_RESET_TOKEN_TTL_MIN} minutes):\n\n${resetUrl}\n\nIf you didn't request this, you can safely ignore this email.`
+  const tpl = await resolveTemplateFromDb('PASSWORD_RESET');
+  const { subject, body } = renderTemplate(tpl, {
+    firstName: user.firstName,
+    link: resetUrl,
+    ttl: env.PASSWORD_RESET_TOKEN_TTL_MIN
   });
+  await mailer.send({ to: user.email, subject, text: body });
 }
 
 function generateResetToken(): string {

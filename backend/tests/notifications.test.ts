@@ -90,5 +90,48 @@ describe('Notifications & daily sweep', () => {
 
     expect(res.body.notifications.length).toBeGreaterThan(0);
     expect(res.body.notifications[0].status).toBe('SENT');
+    expect(res.body.notifications[0]).toHaveProperty('readAt');
+    expect(res.body.notifications[0].readAt).toBeNull();
+  });
+
+  it('marks a single notification as read', async () => {
+    await seedLoan(-1);
+    await runSweep();
+    const notif = await prisma.notification.findFirstOrThrow({ where: { userId: member.id } });
+
+    await api
+      .post(`/api/v1/notifications/me/${notif.id}/read`)
+      .set('Authorization', `Bearer ${member.accessToken}`)
+      .expect(204);
+
+    const updated = await prisma.notification.findUniqueOrThrow({ where: { id: notif.id } });
+    expect(updated.readAt).not.toBeNull();
+  });
+
+  it('cannot mark another user’s notification as read', async () => {
+    await seedLoan(-1);
+    await runSweep();
+    const other = await createTestUser();
+    const notif = await prisma.notification.findFirstOrThrow({ where: { userId: member.id } });
+
+    await api
+      .post(`/api/v1/notifications/me/${notif.id}/read`)
+      .set('Authorization', `Bearer ${other.accessToken}`)
+      .expect(404);
+  });
+
+  it('marks all of a member’s notifications as read', async () => {
+    await seedLoan(-1); // overdue → OVERDUE notification
+    await seedLoan(2); // due soon → DUE_SOON notification
+    await runSweep();
+    expect(await prisma.notification.count({ where: { userId: member.id, readAt: null } })).toBe(2);
+
+    const res = await api
+      .post('/api/v1/notifications/me/read-all')
+      .set('Authorization', `Bearer ${member.accessToken}`)
+      .expect(200);
+    expect(res.body.updated).toBe(2);
+
+    expect(await prisma.notification.count({ where: { userId: member.id, readAt: null } })).toBe(0);
   });
 });

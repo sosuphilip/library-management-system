@@ -177,6 +177,9 @@ async function main() {
       data: {
         title,
         isbn,
+        // Free cover art from Open Library's ISBN cover service. Frontend falls
+        // back to a letter tile if a given ISBN has no image.
+        coverUrl: `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`,
         year: 1900 + (Math.floor(Math.random() * 120)),
         description: `${title} — a much-loved work in our collection.`,
         authors: { create: [{ authorId, position: 0 }] },

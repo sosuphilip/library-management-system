@@ -4,7 +4,7 @@ import { conflict, notFound, forbidden, badRequest } from '../utils/httpError';
 import { buildPaginated, prismaPagination, Paginated } from '../utils/pagination';
 import { audit } from './audit.service';
 import { loanPeriodDaysForBook, overdueDays, policy } from '../config/policy';
-import { mailer } from '../lib/mailer';
+import { renderTemplate, resolveTemplateFromDb, sendNotification } from './notification.service';
 
 // ---------------------------------------------------------------
 // Checkout
@@ -105,6 +105,22 @@ export async function returnBook(copyId: string, actorId: string): Promise<{ loa
         balance: amount,
         reason: `Late return — ${days} day(s) overdue`
       }
+    });
+
+    // Tell the member about the fine (template is admin-editable)
+    const user = await prisma.user.findUnique({ where: { id: loan.userId } });
+    const tpl = await resolveTemplateFromDb('FINE_CHARGED');
+    const { subject, body } = renderTemplate(tpl, {
+      firstName: user?.firstName ?? 'there',
+      amount: `$${amount.toFixed(2)}`,
+      reason: fine.reason
+    });
+    await sendNotification({
+      userId: loan.userId,
+      type: 'FINE_CHARGED',
+      subject,
+      body,
+      relatedLoanId: loan.id
     });
   }
 
@@ -277,13 +293,37 @@ export async function cancelReservation(reservationId: string, userId: string): 
   });
 }
 
-/** Expire READY holds whose grace period lapsed (called by cron + return sweep). */
+/** Expire READY holds whose grace period lapsed (called by cron + return sweep).
+ *  Each expired hold notifies its owner (template is admin-editable). */
 export async function expireStaleReadyHolds(): Promise<number> {
-  const result = await prisma.reservation.updateMany({
+  const stale = await prisma.reservation.findMany({
     where: { status: 'READY', expiresAt: { lt: new Date() } },
+    include: { user: true, book: true }
+  });
+  if (stale.length === 0) return 0;
+
+  await prisma.reservation.updateMany({
+    where: { id: { in: stale.map((r) => r.id) } },
     data: { status: 'EXPIRED' }
   });
-  return result.count;
+
+  for (const reservation of stale) {
+    const tpl = await resolveTemplateFromDb('HOLD_EXPIRED');
+    const { subject, body } = renderTemplate(tpl, {
+      firstName: reservation.user.firstName,
+      bookTitle: reservation.book.title,
+      expiresAt: reservation.expiresAt ? reservation.expiresAt.toISOString().slice(0, 10) : ''
+    });
+    await sendNotification({
+      userId: reservation.userId,
+      type: 'HOLD_EXPIRED',
+      subject,
+      body,
+      relatedReservationId: reservation.id
+    });
+  }
+
+  return stale.length;
 }
 
 // ---------------------------------------------------------------
@@ -456,19 +496,25 @@ async function notifyHoldAvailable(reservationId: string): Promise<void> {
   });
   if (!reservation || reservation.notifiedAt) return;
 
-  try {
-    await mailer.send({
-      to: reservation.user.email,
-      subject: `Your hold is ready: ${reservation.book.title}`,
-      text: `Hi ${reservation.user.firstName},\n\n"${reservation.book.title}" is now available for you. Please pick it up within ${policy.holdAvailableGraceDays} days before the hold expires.\n\n— Your Library`
-    });
+  const tpl = await resolveTemplateFromDb('HOLD_AVAILABLE');
+  const { subject, body } = renderTemplate(tpl, {
+    firstName: reservation.user.firstName,
+    bookTitle: reservation.book.title,
+    expiresAt: reservation.expiresAt ? reservation.expiresAt.toISOString().slice(0, 10) : ''
+  });
+  const record = await sendNotification({
+    userId: reservation.userId,
+    type: 'HOLD_AVAILABLE',
+    subject,
+    body,
+    relatedReservationId: reservation.id
+  });
+  // Only mark notified on success so a failed send is retried on next trigger
+  if (record.status === 'SENT') {
     await prisma.reservation.update({
       where: { id: reservationId },
       data: { notifiedAt: new Date() }
     });
-  } catch (error) {
-    // Notification failures should not break circulation flows
-    console.error('Hold notification failed', error);
   }
 }
 

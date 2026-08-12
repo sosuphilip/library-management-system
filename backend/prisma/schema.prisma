@@ -335,9 +335,12 @@ model Notification {
   relatedReservationId String?
   createdAt DateTime            @default(now())
   sentAt    DateTime?
+  // When the user acknowledged the notification in the app (null = unread)
+  readAt    DateTime?
 
   @@index([userId, status])
   @@index([status])
+  @@index([userId, readAt])
 }
 
 model EmailTemplate {

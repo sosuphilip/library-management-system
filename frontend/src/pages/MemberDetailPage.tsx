@@ -99,7 +99,7 @@ export default function MemberDetailPage() {
       <div className="mb-6 flex items-center gap-3">
         <Badge status={member.status} />
         {member.suspendedUntil && (
-          <span className="text-sm text-slate-500">suspended until {formatDate(member.suspendedUntil)}</span>
+          <span className="text-sm text-slate-500 dark:text-slate-400">suspended until {formatDate(member.suspendedUntil)}</span>
         )}
       </div>
 
@@ -118,18 +118,18 @@ export default function MemberDetailPage() {
           {dossier.data.activeLoans.length === 0 ? (
             <EmptyState title="No active loans" />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-700">
               {dossier.data.activeLoans.map((loan) => {
                 const overdue = daysUntil(loan.dueDate) < 0;
                 return (
                   <li key={loan.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-800">
-                        <Link to={`/catalog/${loan.bookId}`} className="hover:text-brand-700">
+                      <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
+                        <Link to={`/catalog/${loan.bookId}`} className="hover:text-brand-700 dark:hover:text-brand-300">
                           {loan.copy?.book.title}
                         </Link>
                       </p>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-slate-400 dark:text-slate-500">
                         {loan.copy?.barcode} · {overdue ? 'overdue' : 'due'} {formatDate(loan.dueDate)}
                       </p>
                     </div>
@@ -156,12 +156,12 @@ export default function MemberDetailPage() {
           {dossier.data.reservations.length === 0 ? (
             <EmptyState title="No holds" />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-700">
               {dossier.data.reservations.map((r) => (
                 <li key={r.id} className="flex items-center justify-between gap-2 px-5 py-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-slate-800">{r.book?.title}</p>
-                    <p className="text-xs text-slate-400">
+                    <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{r.book?.title}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
                       Position {r.position} · {formatDate(r.createdAt)}
                     </p>
                   </div>
@@ -178,19 +178,19 @@ export default function MemberDetailPage() {
           {dossier.data.loanHistory.length === 0 ? (
             <EmptyState title="No history yet" />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-700">
               {dossier.data.loanHistory.slice(0, 10).map((loan) => (
                 <li key={loan.id} className="flex items-center justify-between gap-2 px-5 py-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-slate-800">{loan.copy?.book.title}</p>
-                    <p className="text-xs text-slate-400">
+                    <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{loan.copy?.book.title}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
                       {loan.copy?.barcode} · checked out {formatDate(loan.checkedOutAt)}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <Badge status={loan.status} />
                     {loan.status === 'RETURNED' && (
-                      <span className="text-xs text-slate-400">returned {formatDate(loan.returnedAt)}</span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500">returned {formatDate(loan.returnedAt)}</span>
                     )}
                   </div>
                 </li>
@@ -205,7 +205,7 @@ export default function MemberDetailPage() {
           {dossier.data.fines.length === 0 ? (
             <EmptyState title="No fines" />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-700">
               {dossier.data.fines.map((fine) => (
                 <FineRow key={fine.id} fine={fine} onAdjusted={invalidate} />
               ))}
@@ -220,8 +220,8 @@ export default function MemberDetailPage() {
 function Stat({ label, value, accent }: { label: string; value: string | number; accent?: boolean }) {
   return (
     <Card className="p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
-      <p className={`mt-1 text-2xl font-bold ${accent ? 'text-red-600' : 'text-slate-800'}`}>{value}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">{label}</p>
+      <p className={`mt-1 text-2xl font-bold ${accent ? 'text-red-600 dark:text-red-400' : 'text-slate-800 dark:text-slate-100'}`}>{value}</p>
     </Card>
   );
 }
@@ -250,10 +250,10 @@ function FineRow({ fine, onAdjusted }: { fine: Fine; onAdjusted: () => void }) {
     <li className="px-5 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-sm font-medium text-slate-800">
+          <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
             {fine.loan?.copy?.book.title ?? 'Fine'} · {formatMoney(fine.amount)}
           </p>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-400 dark:text-slate-500">
             {fine.reason ?? 'No reason'} · balance {formatMoney(fine.balance)}
           </p>
         </div>
@@ -274,7 +274,7 @@ function FineRow({ fine, onAdjusted }: { fine: Fine; onAdjusted: () => void }) {
 
       {mode !== 'none' && fine.status === 'UNPAID' && (
         <form
-          className="mt-3 flex flex-wrap items-end gap-2 rounded bg-slate-50 p-3"
+          className="mt-3 flex flex-wrap items-end gap-2 rounded bg-slate-50 p-3 dark:bg-slate-900/60"
           onSubmit={(e) => {
             e.preventDefault();
             setError('');
@@ -298,7 +298,7 @@ function FineRow({ fine, onAdjusted }: { fine: Fine; onAdjusted: () => void }) {
           <Button type="submit" loading={adjust.isPending}>
             {mode === 'waive' ? 'Waive fine' : 'Apply adjustment'}
           </Button>
-          {error && <p className="w-full text-xs text-red-600">{error}</p>}
+          {error && <p className="w-full text-xs text-red-600 dark:text-red-400">{error}</p>}
         </form>
       )}
     </li>

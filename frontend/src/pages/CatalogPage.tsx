@@ -9,6 +9,7 @@ import {
   Badge,
   Button,
   Card,
+  CoverImage,
   EmptyState,
   Field,
   Input,
@@ -17,7 +18,6 @@ import {
   Pagination,
   Select
 } from '../components/ui';
-import { initial } from '../lib/format';
 
 const PAGE_SIZE = 12;
 
@@ -33,27 +33,20 @@ function BookCard({ book }: { book: Book }) {
   return (
     <Link
       to={`/catalog/${book.id}`}
-      className="group block rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+      className="group block rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-lg dark:border-slate-700 dark:bg-slate-800 dark:hover:border-brand-500/60 dark:hover:shadow-black/40"
     >
       <div className="flex items-start gap-4">
-        {book.coverUrl ? (
-          <img
-            src={book.coverUrl}
-            alt=""
-            className="h-24 w-16 shrink-0 rounded object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex h-24 w-16 shrink-0 items-center justify-center rounded bg-brand-50 text-xl font-bold text-brand-700">
-            {initial(book.title)}
-          </div>
-        )}
+        <CoverImage
+          title={book.title}
+          src={book.coverUrl}
+          className="h-24 w-16 shrink-0 rounded-md shadow-sm transition-transform duration-200 group-hover:scale-[1.04]"
+        />
         <div className="min-w-0">
-          <h3 className="truncate text-sm font-semibold text-slate-800 group-hover:text-brand-700">
+          <h3 className="truncate text-sm font-semibold text-slate-800 group-hover:text-brand-700 dark:text-slate-100 dark:group-hover:text-brand-300">
             {book.title}
           </h3>
-          <p className="mt-0.5 truncate text-sm text-slate-500">{bookAuthorList(book)}</p>
-          {book.year && <p className="mt-0.5 text-xs text-slate-400">{book.year}</p>}
+          <p className="mt-0.5 truncate text-sm text-slate-500 dark:text-slate-400">{bookAuthorList(book)}</p>
+          {book.year && <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{book.year}</p>}
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {inStock ? (
               <Badge status="AVAILABLE">
@@ -65,7 +58,7 @@ function BookCard({ book }: { book: Book }) {
             {book.categories.map((c) => (
               <span
                 key={c.category.id}
-                className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500"
+                className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500 dark:bg-slate-700 dark:text-slate-300"
               >
                 {c.category.name}
               </span>

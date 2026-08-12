@@ -100,7 +100,7 @@ export default function CirculationPage() {
             <Button type="submit" loading={returnLoan.isPending} className="w-full">
               Check in
             </Button>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-400 dark:text-slate-500">
               Late returns automatically accrue fines at the configured daily rate.
             </p>
           </form>
@@ -136,18 +136,18 @@ export default function CirculationPage() {
           ) : (loansQuery.data?.items ?? []).length === 0 ? (
             <EmptyState title="No loans" message="Loans will appear here once members check out books." />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-700">
               {loansQuery.data?.items.map((loan) => {
                 const overdue = loan.status === 'ACTIVE' && daysUntil(loan.dueDate) < 0;
                 return (
                   <li key={loan.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-800">
-                        <Link to={`/catalog/${loan.bookId}`} className="hover:text-brand-700">
+                      <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
+                        <Link to={`/catalog/${loan.bookId}`} className="hover:text-brand-700 dark:hover:text-brand-300">
                           {loan.copy?.book.title ?? 'Book'}
                         </Link>
                       </p>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-slate-400 dark:text-slate-500">
                         {loan.user ? fullName(loan.user.firstName, loan.user.lastName) : '—'} · {loan.copy?.barcode} · checked
                         out {formatDateTime(loan.checkedOutAt)}
                       </p>
@@ -155,7 +155,7 @@ export default function CirculationPage() {
                     <div className="flex items-center gap-3">
                       {overdue && <Badge status="OVERDUE" />}
                       <Badge status={loan.status} />
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
                         {loan.status === 'RETURNED'
                           ? `returned ${formatDate(loan.returnedAt)}`
                           : `due ${formatDate(loan.dueDate)}`}

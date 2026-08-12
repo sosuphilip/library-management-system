@@ -1,6 +1,9 @@
-import type { Notification, NotificationType } from '@prisma/client';
+import type { EmailTemplate, Notification } from '@prisma/client';
+import { NotificationType } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { mailer } from '../lib/mailer';
+import { notFound } from '../utils/httpError';
+import { audit } from './audit.service';
 
 interface NotifyParams {
   userId: string;
@@ -113,4 +116,81 @@ export async function listNotifications(userId: string, limit = 50) {
     orderBy: { createdAt: 'desc' },
     take: Math.min(limit, 200)
   });
+}
+
+// ---------------------------------------------------------------
+// Read / unread (in-app inbox)
+// ---------------------------------------------------------------
+
+/** Mark a single notification as read — scoped to the owner. */
+export async function markNotificationRead(userId: string, notificationId: string): Promise<Notification> {
+  const record = await prisma.notification.findFirst({
+    where: { id: notificationId, userId }
+  });
+  if (!record) throw notFound('Notification not found');
+  return prisma.notification.update({
+    where: { id: notificationId },
+    data: { readAt: new Date() }
+  });
+}
+
+/** Mark every notification for a user as read. */
+export async function markAllNotificationsRead(userId: string): Promise<number> {
+  const result = await prisma.notification.updateMany({
+    where: { userId, readAt: null },
+    data: { readAt: new Date() }
+  });
+  return result.count;
+}
+
+// ---------------------------------------------------------------
+// Email templates (admin-editable, DB rows fall back to defaults)
+// ---------------------------------------------------------------
+
+/** Resolve a template from the DB, falling back to the built-in default. */
+export async function resolveTemplateFromDb(
+  type: NotificationType
+): Promise<{ subject: string; body: string }> {
+  const stored = await prisma.emailTemplate.findUnique({ where: { type } });
+  if (stored) return { subject: stored.subject, body: stored.body };
+  return resolveTemplate(type);
+}
+
+/** All notification types merged with their stored (or default) template. */
+export async function listTemplates() {
+  const stored = await prisma.emailTemplate.findMany();
+  const byType = new Map(stored.map((t) => [t.type, t]));
+
+  return (Object.keys(NotificationType) as NotificationType[]).map((type) => {
+    const row = byType.get(type);
+    const fallback = resolveTemplate(type);
+    return {
+      type,
+      subject: row?.subject ?? fallback.subject,
+      body: row?.body ?? fallback.body,
+      isDefault: !row,
+      updatedAt: row?.updatedAt ?? null
+    };
+  });
+}
+
+/** Create or replace a template (admin only). */
+export async function upsertTemplate(
+  type: NotificationType,
+  subject: string,
+  body: string,
+  updatedById: string
+): Promise<EmailTemplate> {
+  const template = await prisma.emailTemplate.upsert({
+    where: { type },
+    create: { type, subject, body, updatedById },
+    update: { subject, body, updatedById }
+  });
+  await audit({
+    action: 'TEMPLATE.UPDATE',
+    entityType: 'EMAIL_TEMPLATE',
+    entityId: type,
+    actorId: updatedById
+  });
+  return template;
 }

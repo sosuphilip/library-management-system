@@ -105,19 +105,19 @@ export default function ReportsPage() {
           {(mostBorrowed.data?.books ?? []).length === 0 ? (
             <EmptyState title="No checkout data yet" />
           ) : (
-            <ol className="divide-y divide-slate-100">
+            <ol className="divide-y divide-slate-100 dark:divide-slate-700">
               {mostBorrowed.data!.books.map((book, i) => (
                 <li key={book.id} className="flex items-center gap-3 px-5 py-3">
-                  <span className="w-6 text-center text-sm font-semibold text-slate-400">{i + 1}</span>
+                  <span className="w-6 text-center text-sm font-semibold text-slate-400 dark:text-slate-500">{i + 1}</span>
                   <div className="min-w-0 flex-1">
-                    <Link to={`/catalog/${book.id}`} className="truncate text-sm font-medium text-slate-800 hover:text-brand-700">
+                    <Link to={`/catalog/${book.id}`} className="truncate text-sm font-medium text-slate-800 hover:text-brand-700 dark:text-slate-100 dark:hover:text-brand-300">
                       {book.title}
                     </Link>
-                    <p className="truncate text-xs text-slate-400">
+                    <p className="truncate text-xs text-slate-400 dark:text-slate-500">
                       {book.authors.map((a) => a.author.name).join(', ')}
                     </p>
                   </div>
-                  <span className="text-sm font-semibold text-slate-600">{book._count?.loans ?? 0} loans</span>
+                  <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">{book._count?.loans ?? 0} loans</span>
                 </li>
               ))}
             </ol>
@@ -130,18 +130,18 @@ export default function ReportsPage() {
           {(overdue.data?.loans ?? []).length === 0 ? (
             <EmptyState title="Nothing overdue 🎉" />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-700">
               {overdue.data!.loans.map((loan) => (
                 <li key={loan.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-slate-800">{loan.copy?.book.title}</p>
-                    <p className="text-xs text-slate-400">
+                    <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{loan.copy?.book.title}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
                       {loan.user ? fullName(loan.user.firstName, loan.user.lastName) : '—'} · {loan.copy?.barcode}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge status="OVERDUE" />
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
                       {Math.abs(daysUntil(loan.dueDate))} days late
                     </span>
                   </div>
@@ -170,8 +170,8 @@ export default function ReportsPage() {
 function Stat({ label, value, accent }: { label: string; value: string | number; accent?: boolean }) {
   return (
     <Card className="p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
-      <p className={`mt-1 text-2xl font-bold ${accent ? 'text-red-600' : 'text-slate-800'}`}>{value}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">{label}</p>
+      <p className={`mt-1 text-2xl font-bold ${accent ? 'text-red-600 dark:text-red-400' : 'text-slate-800 dark:text-slate-100'}`}>{value}</p>
     </Card>
   );
 }

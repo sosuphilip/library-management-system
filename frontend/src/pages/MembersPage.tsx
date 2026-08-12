@@ -108,8 +108,8 @@ export default function MembersPage() {
           <EmptyState title="No members found" message="Try a different search or status filter." />
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-400">
+            <table className="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+              <thead className="bg-slate-50 text-left text-xs font-medium uppercase tracking-wide text-slate-400 dark:bg-slate-900/60 dark:text-slate-500">
                 <tr>
                   <th className="px-5 py-3">Member</th>
                   <th className="px-5 py-3">Membership</th>
@@ -120,22 +120,22 @@ export default function MembersPage() {
                   <th className="px-5 py-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {membersQuery.data?.items.map((m) => (
-                  <tr key={m.id} className="hover:bg-slate-50">
+                  <tr key={m.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                     <td className="px-5 py-3">
-                      <Link to={`/members/${m.id}`} className="font-medium text-brand-700 hover:underline">
+                      <Link to={`/members/${m.id}`} className="font-medium text-brand-700 hover:underline dark:text-brand-300">
                         {fullName(m.firstName, m.lastName)}
                       </Link>
-                      <p className="text-xs text-slate-400">{m.email}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">{m.email}</p>
                     </td>
-                    <td className="px-5 py-3 font-mono text-xs text-slate-600">{m.membershipNumber}</td>
+                    <td className="px-5 py-3 font-mono text-xs text-slate-600 dark:text-slate-400">{m.membershipNumber}</td>
                     <td className="px-5 py-3">
                       <Badge status={m.status} />
                     </td>
-                    <td className="px-5 py-3 text-slate-500">{formatDate(m.createdAt)}</td>
-                    <td className="px-5 py-3 text-right text-slate-600">{m._count.loans}</td>
-                    <td className="px-5 py-3 text-right text-slate-600">{m._count.fines}</td>
+                    <td className="px-5 py-3 text-slate-500 dark:text-slate-400">{formatDate(m.createdAt)}</td>
+                    <td className="px-5 py-3 text-right text-slate-600 dark:text-slate-400">{m._count.loans}</td>
+                    <td className="px-5 py-3 text-right text-slate-600 dark:text-slate-400">{m._count.fines}</td>
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-2">
                         <Link to={`/members/${m.id}`}>

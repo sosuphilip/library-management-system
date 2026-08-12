@@ -149,6 +149,28 @@ export interface Notification {
 }
 
 // ---------------------------------------------------------------
+// Admin
+// ---------------------------------------------------------------
+
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  actor: Pick<User, 'id' | 'firstName' | 'lastName' | 'email' | 'role'> | null;
+}
+
+export interface EmailTemplate {
+  type: string;
+  subject: string;
+  body: string;
+  isDefault: boolean;
+  updatedAt: string | null;
+}
+
+// ---------------------------------------------------------------
 // Members & reports
 // ---------------------------------------------------------------
 

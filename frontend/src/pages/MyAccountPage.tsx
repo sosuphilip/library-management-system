@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, ApiError } from '../lib/api';
+import { api, ApiError, clearTokens } from '../lib/api';
 import type { Fine, Loan, Notification, Reservation } from '../lib/types';
 import {
   Alert,
@@ -20,6 +20,7 @@ import { daysUntil, formatDate, formatDateTime, formatMoney, plural } from '../l
 
 export default function MyAccountPage() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [flash, setFlash] = useState<{ kind: 'error' | 'success'; text: string } | null>(null);
 
   const loans = useQuery({
@@ -60,6 +61,17 @@ export default function MyAccountPage() {
     onError: (err) => setFlash({ kind: 'error', text: err instanceof ApiError ? err.message : 'Could not cancel the hold.' })
   });
 
+  const markRead = useMutation({
+    mutationFn: (notificationId: string) =>
+      api(`/notifications/me/${notificationId}/read`, { method: 'POST' }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['me'] })
+  });
+
+  const markAllRead = useMutation({
+    mutationFn: () => api('/notifications/me/read-all', { method: 'POST' }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['me'] })
+  });
+
   if (loans.isLoading || reservations.isLoading || fines.isLoading || notifications.isLoading) {
     return <LoadingBlock />;
   }
@@ -91,16 +103,16 @@ export default function MyAccountPage() {
           {activeLoans.length === 0 ? (
             <EmptyState title="No active loans" message="Browse the catalog to borrow a book." action={<Link to="/catalog"><Button variant="secondary">Browse catalog</Button></Link>} />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-700">
               {activeLoans.map((loan) => {
                 const overdue = daysUntil(loan.dueDate) < 0;
                 return (
                   <li key={loan.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-800">
+                      <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
                         {loan.copy?.book.title ?? 'Book'}
                       </p>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-slate-400 dark:text-slate-500">
                         {loan.copy?.barcode} · {overdue ? 'overdue' : 'due'} {formatDate(loan.dueDate)}
                         {overdue && <> ({Math.abs(daysUntil(loan.dueDate))} days)</>}
                       </p>
@@ -128,12 +140,12 @@ export default function MyAccountPage() {
           {(reservations.data?.reservations ?? []).length === 0 ? (
             <EmptyState title="No holds" message="Reserve a book from its catalog page." />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-700">
               {(reservations.data?.reservations ?? []).map((r) => (
                 <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-slate-800">{r.book?.title ?? 'Book'}</p>
-                    <p className="text-xs text-slate-400">
+                    <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{r.book?.title ?? 'Book'}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
                       Position {r.position} · placed {formatDate(r.createdAt)}
                       {r.expiresAt && <> · expires {formatDate(r.expiresAt)}</>}
                     </p>
@@ -158,7 +170,7 @@ export default function MyAccountPage() {
           {(fines.data?.fines ?? []).length === 0 ? (
             <EmptyState title="No fines" message="You're all clear." />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-700">
               {(fines.data?.fines ?? []).map((fine) => (
                 <FineRow key={fine.id} fine={fine} onPaid={invalidate} />
               ))}
@@ -168,26 +180,130 @@ export default function MyAccountPage() {
 
         {/* Notifications */}
         <Card>
-          <CardHeader title="Notifications" subtitle={`${unread} unread`} />
+          <CardHeader
+            title="Notifications"
+            subtitle={`${unread} unread`}
+            actions={
+              unread > 0 ? (
+                <Button variant="secondary" loading={markAllRead.isPending} onClick={() => markAllRead.mutate()}>
+                  Mark all read
+                </Button>
+              ) : undefined
+            }
+          />
           {(notifications.data?.notifications ?? []).length === 0 ? (
             <EmptyState title="No notifications" message="You'll hear about holds and due dates here." />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-700">
               {(notifications.data?.notifications ?? []).slice(0, 10).map((n) => (
-                <li key={n.id} className="px-5 py-3">
-                  <p className="text-sm font-medium text-slate-800">
-                    {n.title}
-                    {!n.readAt && <span className="ml-2 inline-block h-2 w-2 rounded-full bg-brand-500" />}
-                  </p>
-                  <p className="text-sm text-slate-600">{n.body}</p>
-                  <p className="mt-0.5 text-xs text-slate-400">{formatDateTime(n.createdAt)}</p>
+                <li key={n.id}>
+                  <button
+                    type="button"
+                    onClick={() => n.readAt || markRead.mutate(n.id)}
+                    className={`block w-full px-5 py-3 text-left transition-colors ${
+                      n.readAt ? '' : 'hover:bg-brand-50/60 dark:hover:bg-brand-900/30'
+                    }`}
+                  >
+                    <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
+                      {n.title}
+                      {!n.readAt && <span className="ml-2 inline-block h-2 w-2 rounded-full bg-brand-500" />}
+                    </p>
+                    <p className="text-sm text-slate-600 dark:text-slate-300">{n.body}</p>
+                    <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{formatDateTime(n.createdAt)}</p>
+                  </button>
                 </li>
               ))}
             </ul>
           )}
         </Card>
       </div>
+
+      {/* Change password */}
+      <ChangePasswordCard onChanged={() => navigate('/login', { state: { notice: 'Password changed. Sign in with your new password.' } })} />
     </div>
+  );
+}
+
+function ChangePasswordCard({ onChanged }: { onChanged: () => void }) {
+  const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirm: '' });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const change = useMutation({
+    mutationFn: () =>
+      api('/auth/change-password', {
+        method: 'POST',
+        body: { currentPassword: form.currentPassword, newPassword: form.newPassword }
+      }),
+    onSuccess: () => {
+      // Backend revokes all sessions on password change — drop local tokens
+      // and hand off to the login page with a notice.
+      clearTokens();
+      onChanged();
+    },
+    onError: (err) => {
+      setSuccess('');
+      setError(err instanceof ApiError ? err.message : 'Could not change your password.');
+    }
+  });
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    const pw = form.newPassword;
+    if (pw.length < 8 || !/[a-z]/.test(pw) || !/[A-Z]/.test(pw) || !/[0-9]/.test(pw)) {
+      setError('New password must be at least 8 characters with an uppercase letter, a lowercase letter and a number.');
+      return;
+    }
+    if (pw !== form.confirm) {
+      setError('New passwords do not match.');
+      return;
+    }
+    change.mutate();
+  }
+
+  return (
+    <Card className="mt-6">
+      <CardHeader title="Change password" subtitle="You'll be signed out everywhere after changing it" />
+      <form onSubmit={onSubmit} className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-3">
+        {error && <Alert className="sm:col-span-3">{error}</Alert>}
+        {success && <Alert kind="success" className="sm:col-span-3">{success}</Alert>}
+        <Field label="Current password">
+          <Input
+            type="password"
+            required
+            autoComplete="current-password"
+            value={form.currentPassword}
+            onChange={(e) => setForm((f) => ({ ...f, currentPassword: e.target.value }))}
+          />
+        </Field>
+        <Field label="New password" hint="8+ chars, upper, lower, number">
+          <Input
+            type="password"
+            required
+            autoComplete="new-password"
+            value={form.newPassword}
+            onChange={(e) => setForm((f) => ({ ...f, newPassword: e.target.value }))}
+          />
+        </Field>
+        <Field label="Confirm new password">
+          <Input
+            type="password"
+            required
+            autoComplete="new-password"
+            value={form.confirm}
+            onChange={(e) => setForm((f) => ({ ...f, confirm: e.target.value }))}
+          />
+        </Field>
+        <div className="sm:col-span-3">
+          <Button type="submit" loading={change.isPending}>
+            Change password
+          </Button>
+        </div>
+      </form>
+    </Card>
   );
 }
 
@@ -209,10 +325,10 @@ function FineRow({ fine, onPaid }: { fine: Fine; onPaid: () => void }) {
     <li className="px-5 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-sm font-medium text-slate-800">
+          <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
             {fine.loan?.copy?.book.title ?? 'Fine'} · {formatMoney(fine.amount)}
           </p>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-400 dark:text-slate-500">
             {fine.reason ?? 'No reason'} · {formatDate(fine.createdAt)}
           </p>
         </div>
@@ -221,7 +337,7 @@ function FineRow({ fine, onPaid }: { fine: Fine; onPaid: () => void }) {
 
       {fine.status === 'UNPAID' && balance > 0 && (
         <form
-          className="mt-3 flex flex-wrap items-end gap-2 rounded bg-slate-50 p-3"
+          className="mt-3 flex flex-wrap items-end gap-2 rounded bg-slate-50 p-3 dark:bg-slate-900/60"
           onSubmit={(e) => {
             e.preventDefault();
             setError('');
@@ -241,8 +357,8 @@ function FineRow({ fine, onPaid }: { fine: Fine; onPaid: () => void }) {
           <Button type="submit" loading={pay.isPending}>
             Pay {formatMoney(amount)}
           </Button>
-          <p className="w-full text-xs text-slate-400">Balance: {formatMoney(balance)}</p>
-          {error && <p className="w-full text-xs text-red-600">{error}</p>}
+          <p className="w-full text-xs text-slate-400 dark:text-slate-500">Balance: {formatMoney(balance)}</p>
+          {error && <p className="w-full text-xs text-red-600 dark:text-red-400">{error}</p>}
         </form>
       )}
     </li>
