@@ -1,0 +1,63 @@
+name: Deploy frontend to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch:
+
+# Required for the GitHub Pages deployment actions
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build (bake in the API URL)
+        working-directory: frontend
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          # Project-site sub-path: https://<user>.github.io/<repo>/
+          VITE_BASE: /${{ github.event.repository.name }}/
+        run: |
+          if [ -z "$VITE_API_URL" ]; then
+            echo "::error::Set the VITE_API_URL repository secret to your deployed backend (e.g. https://your-app.up.railway.app/api/v1) before deploying."
+            exit 1
+          fi
+          echo "Bundling with API base: ${VITE_API_URL}"
+          npm run build
+          # SPA deep-link fallback: GitHub Pages serves 404.html for unknown
+          # paths, so pointing it at index.html keeps client-side routing alive.
+          cp dist/index.html dist/404.html
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+      - name: Deploy
+        uses: actions/deploy-pages@v4

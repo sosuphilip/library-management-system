@@ -173,6 +173,74 @@ Backend (`backend/.env`) — see `.env.example` for all:
 
 Frontend (`frontend/.env`): `VITE_API_URL` — base URL of the API (`/api/v1` included).
 
+## Deploying to production
+
+The app splits cleanly for free-tier hosting:
+
+| Part     | Host                                                                   |
+| -------- | ---------------------------------------------------------------------- |
+| Frontend | **GitHub Pages** (`https://<user>.github.io/library-management-system/`) |
+| Backend  | **Railway** (long-running Node service — the daily cron needs it)      |
+| Database | **Railway Postgres** (or Neon — free serverless Postgres)              |
+
+> ⚠️ GitHub Pages can only serve static files — it **cannot** run the Express
+> API or Postgres. The backend needs a real host like Railway, Render, Fly.io
+> or Koyeb.
+
+### 1. Backend + database on Railway
+
+1. Push this repo to GitHub, then sign up at [railway.app](https://railway.app).
+2. **New Project → Deploy from GitHub repo** → pick this repo.
+3. When it asks about the service, set the **Root Directory** to `backend`
+   (this repo is a monorepo). Railway reads `backend/railway.json`, builds the
+   production Docker image, and runs `prisma migrate deploy` at startup.
+4. Add a **Postgres** plugin (Project → New → Database → PostgreSQL). Copy its
+   `DATABASE_URL` into the backend service's variables.
+5. Add the remaining environment variables to the backend service:
+
+   | Variable             | Value                                                        |
+   | -------------------- | ------------------------------------------------------------ |
+   | `DATABASE_URL`       | from the Postgres plugin                                     |
+   | `JWT_ACCESS_SECRET`  | long random string (`openssl rand -hex 32`)                  |
+   | `JWT_REFRESH_SECRET` | different long random string                                 |
+   | `CORS_ORIGINS`       | `https://<user>.github.io`                                   |
+   | `APP_BASE_URL`       | `https://<user>.github.io/library-management-system`         |
+   | `MAIL_TRANSPORT`     | `json` (emails are logged, not delivered, on the free tier)  |
+   | `NODE_ENV`           | `production`                                                 |
+
+6. **Seed once** (the seed truncates all tables, so it must NEVER run
+   automatically on every deploy). Run it from your machine against the
+   Railway database — the prod image has no `tsx`, so a Railway shell won't
+   work:
+
+   ```bash
+   cd backend
+   DATABASE_URL="<railway-db-connection-string>" npm run db:seed
+   ```
+7. The API is live at `https://<your-app>.up.railway.app` — verify
+   `GET /health` returns `{"status":"ok"}`.
+
+### 2. Frontend on GitHub Pages
+
+1. Repo **Settings → Pages → Source → GitHub Actions** (the workflow
+   `.github/workflows/deploy-frontend.yml` does the rest).
+2. Add a repository secret `VITE_API_URL` = `https://<your-app>.up.railway.app/api/v1`
+   (Settings → Secrets and variables → Actions). The deploy workflow fails
+   loudly until this is set, so you can't ship a broken bundle.
+3. Push to `master` (or run **Actions → Deploy frontend to GitHub Pages →
+   Run workflow**) and the SPA appears at
+   `https://<user>.github.io/library-management-system/`.
+4. Sign in with the seeded demo accounts (password `Passw0rd!`).
+
+> The build bakes `VITE_BASE=/<repo-name>/` (auto-derived from the repo name)
+> so assets resolve under the Pages sub-path, and copies `index.html` to
+> `404.html` so deep links work (GitHub Pages' SPA fallback). If you ever
+> rename the repo, the Pages URL changes with it.
+>
+> Other hosts using the Docker image directly (Render, etc.): the image only
+> seeds when you set `SEED_ON_START=true`, so restarts are data-safe by
+> default.
+
 ## API overview
 
 All routes are prefixed `/api/v1` and return JSON `{ ... }` (errors: `{ error: { code, message } }`).

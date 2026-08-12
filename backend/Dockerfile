@@ -45,4 +45,7 @@ COPY prisma ./prisma
 RUN npx prisma generate
 COPY --from=build /app/dist ./dist
 EXPOSE 4000
-CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && node dist/index.js"]
+# Seed only when explicitly requested — the seed truncates all tables, so it
+# must never run implicitly on every restart/deploy.
+#   docker run -e SEED_ON_START=true ...   (one-time demo data)
+CMD ["sh", "-c", "npx prisma migrate deploy && if [ \"$SEED_ON_START\" = \"true\" ]; then npx prisma db seed; fi && node dist/index.js"]
