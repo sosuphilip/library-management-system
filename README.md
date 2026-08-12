@@ -179,18 +179,26 @@ The app splits cleanly for free-tier hosting:| Part     | Host                  
 | -------- | ----------------------------------------------------------------------- |
 | Frontend | **GitHub Pages** (`https://<user>.github.io/library-management-system/`) |
 | Backend  | **Render** (free web service — needs to be long-running for the cron)   |
-| Database | **Neon** (free serverless Postgres, 0.5 GB, doesn't expire)             |
+| Database | **Supabase** (free Postgres — use the **Session pooler** string, not the IPv6-only direct host) |
 
 > ⚠️ GitHub Pages can only serve static files — it **cannot** run the Express
-> API or Postgres. The backend needs a real host. Railway (trial credit),
-> Render, Fly.io and Koyeb are alternatives — this guide uses **Render + Neon**
-> because both are genuinely free-forever tiers.
+> API or Postgres. The backend needs a real host. This guide uses
+> **Render + Supabase** because both are genuinely free-forever tiers.
 
-### 1. Database on Neon (free)
+### 1. Database on Supabase (free)
 
-1. Sign up at [neon.tech](https://console.neon.tech) (GitHub login works).
-2. Create a project (any region), then copy the **connection string** from
-   Connection Details — it looks like `postgresql://user:pass@ep-xxx.region.aws.neon.tech/dbname?sslmode=require`.
+1. Sign up at [supabase.com](https://supabase.com) (GitHub login works) and
+   create a project (any region).
+2. Open **⚡ Connect → Connection pooling** and copy the **Session pooler**
+   string — it looks like
+   `postgresql://postgres.<project-ref>:<password>@aws-1-<region>.pooler.supabase.com:5432/postgres`.
+   Use this exact string everywhere (`DATABASE_URL`, seeds, Render).
+   ⚠️ Don't use the "Direct connection" string: new Supabase projects are
+   **IPv6-only** on the direct host (`db.<ref>.supabase.co`), which most
+   networks and Render can't reach. The pooler is IPv4 and works everywhere.
+   If the string shows `[YOUR-PASSWORD]`, replace it with the real database
+   password (URL-encode special characters like `@` → `%40`), and append
+   `?sslmode=require` if it's missing.
 
 ### 2. Backend on Render (free)
 
@@ -198,32 +206,34 @@ The app splits cleanly for free-tier hosting:| Part     | Host                  
 2. **New + → Blueprint** → pick this repo. The repo-root `render.yaml` is read
    automatically: it builds `./Dockerfile` (which builds the backend), sets
    generated JWT secrets, and points CORS/links at the GitHub Pages site.
-3. When prompted, paste the **Neon `DATABASE_URL`** (the blueprint's only
-   manual value) and **Apply**. Render deploys and runs `prisma migrate deploy`
-   on start.
+3. When prompted, paste the **Supabase Session pooler string** as
+   `DATABASE_URL` (the blueprint's only manual value) and **Apply**. Render
+   deploys and runs `prisma migrate deploy` on start (migrations are
+   idempotent — safe to run on every deploy).
 4. The API is live at `https://<your-app>.onrender.com` — verify
    `GET /health` returns `{"status":"ok"}`.
 
 > Free-tier notes: Render sleeps the service after ~15 min idle and wakes it on
 > the next request (a few seconds' delay), and the daily notification cron
-> only runs while the service is awake. Neon's serverless DB auto-suspends and
-> resumes — no expiry.
+> only runs while the service is awake. Supabase's free DB pauses after ~7 days
+> of inactivity (wakes on the first request) — the IPv4 pooler keeps it
+> reachable from Render at all times.
 
 ### 3. Seed once (demo data)
 
 The seed truncates all tables, so it must NEVER run automatically. Run it from
-your machine against the Neon database (the prod image has no `tsx`):
+your machine against the Supabase database (the prod image has no `tsx`):
 
 ```bash
 cd backend
-DATABASE_URL="<neon-connection-string>" npm run db:seed
+DATABASE_URL="<supabase-session-pooler-string>?sslmode=require" npm run db:seed
 ```
 
 ### 4. Frontend on GitHub Pages
 
 1. Repo **Settings → Pages → Source → GitHub Actions** (the workflow
    `.github/workflows/deploy-frontend.yml` does the rest).
-2. Add a repository secret `VITE_API_URL` = `https://<your-app>.up.railway.app/api/v1`
+2. Add a repository secret `VITE_API_URL` = `https://<your-app>.onrender.com/api/v1`
    (Settings → Secrets and variables → Actions). The deploy workflow fails
    loudly until this is set, so you can't ship a broken bundle.
 3. Push to `master` (or run **Actions → Deploy frontend to GitHub Pages →

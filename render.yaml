@@ -1,9 +1,10 @@
 # Render Blueprint — one-click backend deploy (free tier).
 #
-# Deploy: render.com → New + → Blueprint → pick this repo → paste the Neon
-# DATABASE_URL when prompted → Apply. The root ./Dockerfile builds the API and
-# runs `prisma migrate deploy` on start. The seed never runs automatically
-# (set SEED_ON_START=true only for a fresh one-time seed).
+# Deploy: render.com → New + → Blueprint → pick this repo → paste the Supabase
+# Session pooler connection string as DATABASE_URL when prompted → Apply. The
+# root ./Dockerfile builds the API and runs `prisma migrate deploy` on start.
+# The seed never runs automatically (set SEED_ON_START=true only for a fresh
+# one-time seed).
 services:
   - type: web
     name: library-api
