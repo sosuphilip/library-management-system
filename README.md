@@ -191,9 +191,10 @@ The app splits cleanly for free-tier hosting:
 
 1. Push this repo to GitHub, then sign up at [railway.app](https://railway.app).
 2. **New Project → Deploy from GitHub repo** → pick this repo.
-3. When it asks about the service, set the **Root Directory** to `backend`
-   (this repo is a monorepo). Railway reads `backend/railway.json`, builds the
-   production Docker image, and runs `prisma migrate deploy` at startup.
+3. **No Root Directory setting needed** — the repo-root `Dockerfile` +
+   `railway.json` build the backend straight from the repo root and run
+   `prisma migrate deploy` at startup. (Alternatively you may set the service's
+   Root Directory to `backend`, which uses `backend/railway.json` instead.)
 4. Add a **Postgres** plugin (Project → New → Database → PostgreSQL). Copy its
    `DATABASE_URL` into the backend service's variables.
 5. Add the remaining environment variables to the backend service:
